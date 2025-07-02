@@ -1,0 +1,120 @@
+{% extends 'forca/base.html' %}
+{% block title %}Jogo da Forca{% endblock %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+  <h2 class="mb-3">Tema: {{ tema }}</h2>
+  {% if dica %}
+  <p class="text-muted">Dica: {{ dica }}</p>
+  {% endif %}
+
+  <h1 id="palavraDisplay" class="display-4 mb-4">_ _ _ _</h1>
+  <div id="letras" class="mb-4">
+    {% for letra in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
+      <button class="btn btn-outline-primary m-1" onclick="tentar('{{ letra }}')" id="btn_{{ letra }}">{{ letra }}</button>
+    {% endfor %}
+  </div>
+
+  <p>Erros: <span id="erros">0</span> / 6</p>
+  <p id="mensagemFinal" class="fs-5 mt-3 text-danger fw-bold"></p>
+</div>
+
+<script>
+let palavraId = {{ palavra_id }};
+let palavraOriginal = "";
+
+fetch(`/api/palavra/${palavraId}/`)
+  .then(res => res.json())
+  .then(data => {
+    palavraOriginal = data.palavra.toUpperCase();
+    atualizarDisplay();
+  });
+
+let letrasTentadas = [];
+let erros = 0;
+
+function atualizarDisplay() {
+  let display = "";
+  for (let letra of palavraOriginal) {
+    display += letrasTentadas.includes(letra) ? letra + " " : "_ ";
+  }
+  document.getElementById("palavraDisplay").innerText = display.trim();
+}
+
+function tentar(letra) {
+  if (letrasTentadas.includes(letra)) return;
+  letrasTentadas.push(letra);
+
+  document.getElementById("btn_" + letra).disabled = true;
+
+  if (palavraOriginal.includes(letra)) {
+    atualizarDisplay();
+    if (!document.getElementById("palavraDisplay").innerText.includes("_")) {
+      document.getElementById("mensagemFinal").innerText = "Parabéns! Você acertou.";
+    }
+  } else {
+    erros++;
+    document.getElementById("erros").innerText = erros;
+    if (erros >= 6) {
+      document.getElementById("mensagemFinal").innerText = `Você perdeu! A palavra era: ${palavraOriginal}`;
+      document.getElementById("letras").innerHTML = "";
+    }
+  }
+}
+
+function enviarResultado(acertou, erros) {
+  fetch('/api/salvar_jogada/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken')
+    },
+    body: JSON.stringify({
+      palavra_id: palavraId,
+      acertou: acertou,
+      erros: erros
+    })
+  });
+}
+
+// função para pegar o cookie CSRF (se precisar)
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Atualize a função tentar:
+function tentar(letra) {
+  if (letrasTentadas.includes(letra)) return;
+  letrasTentadas.push(letra);
+
+  document.getElementById("btn_" + letra).disabled = true;
+
+  if (palavraOriginal.includes(letra)) {
+    atualizarDisplay();
+    if (!document.getElementById("palavraDisplay").innerText.includes("_")) {
+      document.getElementById("mensagemFinal").innerText = "Parabéns! Você acertou.";
+      enviarResultado(true, erros);
+    }
+  } else {
+    erros++;
+    document.getElementById("erros").innerText = erros;
+    if (erros >= 6) {
+      document.getElementById("mensagemFinal").innerText = `Você perdeu! A palavra era: ${palavraOriginal}`;
+      document.getElementById("letras").innerHTML = "";
+      enviarResultado(false, erros);
+    }
+  }
+}
+</script>
+{% endblock %}
