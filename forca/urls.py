@@ -12,5 +12,7 @@ urlpatterns = [
     path('jogar/palavra/<int:pk>/', views.JogarPalavraView.as_view(), name='jogar-palavra'),
     path('api/palavra/<int:pk>/', views.api_palavra, name='api-palavra'),
     path('api/salvar_jogada/', views.salvar_jogada, name='salvar-jogada'),
+    path('professores/', views.ProfessorListView.as_view(), name='professor_list'),
+    path('professor/<int:professor_id>/temas/', views.TemaPorProfessorListView.as_view(), name='tema_por_professor'),
     # URLs futuras para jogo, PDF, relatório, etc.
 ]

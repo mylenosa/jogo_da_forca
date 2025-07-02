@@ -9,7 +9,7 @@ from django.views.generic import TemplateView, ListView, CreateView
 from django.views.generic.edit import FormView
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from django.utils.decorators import method_decorator
+from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy
 from .models import Tema, Palavra, Jogada
@@ -106,3 +106,28 @@ def salvar_jogada(request):
         erros=erros
     )
     return JsonResponse({'status': 'ok'})
+
+User = get_user_model()
+
+class ProfessorListView(ListView):
+    model = User
+    template_name = 'forca/professor_list.html'
+    context_object_name = 'professores'
+
+    def get_queryset(self):
+        return User.objects.filter(is_staff=True, temas__isnull=False).distinct()
+
+class TemaPorProfessorListView(ListView):
+    model = Tema
+    template_name = 'forca/tema_por_professor.html'
+    context_object_name = 'temas'
+
+    def get_queryset(self):
+        professor_id = self.kwargs['professor_id']
+        return Tema.objects.filter(criado_por__id=professor_id)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['professor'] = get_object_or_404(User, id=self.kwargs['professor_id'])
+        return context
+
