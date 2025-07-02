@@ -5,7 +5,7 @@ from django.views import View
 from django.http import JsonResponse
 from django.utils.html import escape
 from django.shortcuts import render
-from django.views.generic import TemplateView, ListView, CreateView
+from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DeleteView
 from django.views.generic.edit import FormView
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -16,7 +16,8 @@ from .models import Tema, Palavra, Jogada
 from .forms import UserRegisterForm
 
 class HomeView(TemplateView):
-    template_name = 'forca/home.html'
+    def get(self, request, *args, **kwargs):
+        return redirect('tema-list')
 
 class TemaListView(ListView):
     model = Tema
@@ -131,3 +132,82 @@ class TemaPorProfessorListView(ListView):
         context['professor'] = get_object_or_404(User, id=self.kwargs['professor_id'])
         return context
 
+class JogarView(TemplateView):
+    template_name = 'forca/jogar_menu.html'
+
+class ProfessorDashboardView(LoginRequiredMixin, TemplateView):
+    template_name = 'professor/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Busca todos os temas criados pelo professor logado
+        context['temas'] = self.request.user.temas.all()
+        return context
+
+class TemaUpdateView(UpdateView):
+    model = Tema
+    fields = ['nome']  # campos que quer permitir editar
+    template_name = 'forca/tema_form.html'  # você pode usar o mesmo template do create, ou criar outro
+    success_url = reverse_lazy('tema-list')
+
+class TemaGerenciarView(ListView):
+    model = Tema
+    template_name = 'forca/tema_gerenciar.html'
+    context_object_name = 'temas'
+
+    def get_queryset(self):
+        return Tema.objects.filter(criado_por=self.request.user)
+
+class TemaUpdateView(UpdateView):
+    model = Tema
+    fields = ['nome']
+    template_name = 'forca/tema_form.html'
+    success_url = reverse_lazy('tema-gerenciar')
+
+class TemaDeleteView(DeleteView):
+    model = Tema
+    template_name = 'forca/tema_confirm_delete.html'
+    success_url = reverse_lazy('tema-gerenciar')
+
+class PalavraListView(ListView):
+    model = Palavra
+    template_name = 'forca/palavra_list.html'
+    context_object_name = 'palavras'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        tema_pk = self.kwargs['tema_pk']
+        context['tema'] = Tema.objects.get(pk=tema_pk)
+        return context
+
+    def get_queryset(self):
+        tema_pk = self.kwargs['tema_pk']
+        return Palavra.objects.filter(tema_id=tema_pk)
+
+class PalavraCreateView(CreateView):
+    model = Palavra
+    fields = ['nome']  # campos da palavra
+    template_name = 'forca/palavra_form.html'
+
+    def form_valid(self, form):
+        tema_pk = self.kwargs['tema_pk']
+        form.instance.tema = Tema.objects.get(pk=tema_pk)
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('palavra-list', kwargs={'tema_pk': self.kwargs['tema_pk']})
+
+class PalavraUpdateView(UpdateView):
+    model = Palavra
+    fields = ['nome']
+    template_name = 'forca/palavra_form.html'
+
+    def get_success_url(self):
+        return reverse_lazy('palavra-list', kwargs={'tema_pk': self.object.tema.pk})
+
+class PalavraDeleteView(DeleteView):
+    model = Palavra
+    template_name = 'forca/palavra_confirm_delete.html'
+
+    def get_success_url(self):
+        return reverse_lazy('palavra-list', kwargs={'tema_pk': self.object.tema.pk})

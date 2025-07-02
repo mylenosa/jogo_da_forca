@@ -1,0 +1,33 @@
+{% extends 'forca/base.html' %}
+
+{% block title %}Gerenciar Meus Temas{% endblock %}
+
+{% block content %}
+<h1>Meus Temas</h1>
+<a href="{% url 'tema-create' %}" class="btn btn-primary mb-3">+ Novo Tema</a>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Nome do Tema</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for tema in temas %}
+    <tr>
+      <td>{{ tema.nome }}</td>
+      <td>
+        <a href="{% url 'tema-update' tema.pk %}" class="btn btn-sm btn-warning">Editar Tema</a>
+        <a href="{% url 'tema-delete' tema.pk %}" class="btn btn-sm btn-danger">Excluir Tema</a>
+        <a href="{% url 'palavra-list' tema.pk %}" class="btn btn-sm btn-info">Palavras</a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr>
+      <td colspan="3">Você ainda não criou nenhum tema.</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

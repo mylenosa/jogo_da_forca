@@ -1,11 +1,10 @@
 {% extends 'forca/base.html' %}
-
-{% block title %}Home - Jogo da Forca{% endblock %}
+{% block title %}Início{% endblock %}
 
 {% block content %}
-<div class="text-center">
-    <h1>Bem-vindo ao Jogo da Forca</h1>
-    <p>Escolha um tema para começar a jogar.</p>
-    <a href="{% url 'tema-list' %}" class="btn btn-primary">Ver Temas</a>
+<div class="container text-center mt-5">
+  <h1 class="mb-4">Bem-vindo ao Jogo da Forca!</h1>
+  <p class="lead">Desafie-se com palavras de diferentes temas criadas por professores.</p>
+  <a href="{% url 'jogar-menu' %}" class="btn btn-lg btn-primary mt-4">🎮 Começar a Jogar</a>
 </div>
 {% endblock %}

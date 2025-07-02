@@ -1,12 +1,15 @@
 {% extends 'forca/base.html' %}
 
-{% block title %}Novo Tema - Jogo da Forca{% endblock %}
+{% block title %}Editar Tema{% endblock %}
 
 {% block content %}
-<h2>Cadastrar novo tema</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button class="btn btn-success" type="submit">Salvar</button>
-</form>
+  <div class="container mt-4">
+    <h2>Editar Tema</h2>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-primary">Salvar</button>
+      <a href="{% url 'tema-list' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+  </div>
 {% endblock %}
