@@ -1,0 +1,26 @@
+# Ambiente virtual
+.venv/
+env/
+venv/
+
+# Cache e arquivos compilados
+__pycache__/
+*.py[cod]
+
+# Banco de dados local
+db.sqlite3
+
+# Configurações do PyCharm
+.idea/
+
+# Arquivos temporários
+*.log
+*.tmp
+*.bak
+*.swp
+
+# Arquivos do macOS
+.DS_Store
+
+# Configurações sensíveis (caso você use)
+.env
