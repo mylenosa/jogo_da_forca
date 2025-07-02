@@ -40,13 +40,17 @@ class TemaCreateView(ProfessorRequiredMixin, CreateView):
 
 class PalavraCreateView(ProfessorRequiredMixin, CreateView):
     model = Palavra
-    fields = ['tema', 'texto', 'dica', 'texto_extra']
+    fields = ['texto', 'dica', 'texto_extra']
     template_name = 'forca/palavra_form.html'
-    success_url = reverse_lazy('tema-list')
 
     def form_valid(self, form):
+        tema_pk = self.kwargs['tema_pk']
+        form.instance.tema = Tema.objects.get(pk=tema_pk)
         form.instance.criado_por = self.request.user
         return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('palavra-list', kwargs={'tema_pk': self.kwargs['tema_pk']})
 
 class AlunoRegisterView(FormView):
     template_name = 'forca/register.html'
@@ -150,7 +154,7 @@ class TemaUpdateView(UpdateView):
     template_name = 'forca/tema_form.html'  # você pode usar o mesmo template do create, ou criar outro
     success_url = reverse_lazy('tema-list')
 
-class TemaGerenciarView(ListView):
+class TemaGerenciarView(ProfessorRequiredMixin, ListView):
     model = Tema
     template_name = 'forca/tema_gerenciar.html'
     context_object_name = 'temas'
@@ -184,22 +188,9 @@ class PalavraListView(ListView):
         tema_pk = self.kwargs['tema_pk']
         return Palavra.objects.filter(tema_id=tema_pk)
 
-class PalavraCreateView(CreateView):
+class PalavraUpdateView(ProfessorRequiredMixin, UpdateView):
     model = Palavra
-    fields = ['nome']  # campos da palavra
-    template_name = 'forca/palavra_form.html'
-
-    def form_valid(self, form):
-        tema_pk = self.kwargs['tema_pk']
-        form.instance.tema = Tema.objects.get(pk=tema_pk)
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse_lazy('palavra-list', kwargs={'tema_pk': self.kwargs['tema_pk']})
-
-class PalavraUpdateView(UpdateView):
-    model = Palavra
-    fields = ['nome']
+    fields = ['texto', 'dica', 'texto_extra']
     template_name = 'forca/palavra_form.html'
 
     def get_success_url(self):

@@ -1,52 +1,79 @@
-# 🎮 Jogo da Forca - Aplicação Web com Django
+# Jogo da Forca
 
-Aplicação web do clássico jogo da forca, desenvolvida com Django e baseada em Class Based Views.
+Aplicação web Django para um jogo da forca com gerenciamento de temas e palavras por professores, e acesso para alunos jogarem com ou sem cadastro.
 
-## ✅ Funcionalidades Implementadas
+---
 
-- Professores podem se cadastrar, criar **temas** e **palavras** com **dica**.
-- Alunos podem jogar livremente (com ou sem login).
-- Tela interativa do jogo da forca, com contador de erros e dica.
-- Registro de jogadas dos alunos (palavra, acertos, erros, data).
-- Interface separada para professores e alunos.
-- Filtragem por tema para iniciar um jogo.
-- Layout simples e funcional com Bootstrap.
-- Projeto pronto para deploy no PythonAnywhere.
+## Funcionalidades principais
 
-## 📌 A fazer (próximas etapas)
+- Cadastro e login para professores (usuários staff) para criação/edição/exclusão de temas e palavras.
+- Alunos podem jogar sem cadastro, ou se cadastrar para ter histórico.
+- Escolha de temas e palavras para jogar, filtrando por tema ou professor.
+- Interface responsiva com Bootstrap.
+- Professores podem gerar PDFs das atividades para imprimir.
+- Relatórios para professores com dados de jogadas por aluno, tema e período.
+- Deploy simples para servidores como PythonAnywhere.
 
-- Filtro por professor e tema antes do jogo.
-- Relatório visual de jogadas para professores.
-- Geração de PDF da atividade por tema.
-- Opção de exigir login do aluno para jogar certos temas.
-- Melhorias visuais no jogo (desenho da forca, responsividade).
+---
 
-## 🧩 Estrutura
+## Requisitos
 
-- `tema/` - Temas criados por professores.
-- `palavra/` - Palavras com dicas associadas aos temas.
-- `jogada/` - Histórico de jogadas dos alunos.
-- `templates/` - Páginas HTML do jogo, login, cadastro e listagens.
+- Python 3.8+
+- Django 5.2.3
+- Bootstrap 5 (via CDN)
+- Pacotes listados em `requirements.txt`
 
-## 👥 Requisitos de Usuário
+---
 
-### Professores
-- Criam temas e palavras
-- Visualizam jogadas
-- Podem gerar PDF (futuramente)
-
-### Alunos
-- Jogam sem login (ou com, se necessário)
-- Podem escolher tema
-- Resultados são registrados
-
-## 🚀 Como rodar localmente
+## Instalação rápida
 
 ```bash
-git clone https://github.com/seu-usuario/jogo_da_forca.git
-cd jogo_da_forca
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+git clone <URL_DO_REPOSITORIO>
+cd jogo-da-forca
+python -m venv venv
+source venv/bin/activate       # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
+python manage.py createsuperuser
 python manage.py runserver
+
+## Usuários de teste incluídos
+
+| Usuário       | Tipo      | Senha       |
+| ------------- | --------- | ----------- |
+| higor.lauer   | aluno     | alunoifro   |
+| marcos.faino  | professor | alunoifro   |
+
+---
+
+## Estrutura do projeto
+
+- `forca/` — App principal do jogo e gerenciamento.
+- `templates/` — Templates HTML baseados em Bootstrap.
+- `static/` — Arquivos estáticos (CSS, JS, imagens).
+- `models.py` — Modelos para Tema, Palavra, Aluno, Partida e Jogada.
+- `views.py` — Views baseadas em Classes (Class-Based Views).
+- `urls.py` — Rotas da aplicação.
+- `forms.py` — Formulários customizados.
+- `requirements.txt` — Dependências do projeto.
+
+---
+
+## Regras e fluxos
+
+- Professores criam temas e adicionam palavras com dicas e textos extras.
+- Alunos escolhem tema ou professor para jogar.
+- Jogo da forca com sistema de erros, dicas e palavras randomizadas.
+- Professores visualizam relatórios e geram PDFs para impressão.
+
+---
+
+## Deploy
+
+Projeto pode ser facilmente implantado em servidores como PythonAnywhere, Heroku, etc., seguindo a documentação oficial de deploy do Django.
+
+---
+
+## Contato
+
+Para dúvidas ou sugestões, entre em contato com o professor ou mantenedor do projeto.

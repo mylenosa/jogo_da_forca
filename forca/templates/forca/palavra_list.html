@@ -1,34 +1,21 @@
 {% extends 'forca/base.html' %}
 
-{% block title %}Palavras do Tema: {{ tema.nome }}{% endblock %}
-
 {% block content %}
-<h2>Palavras do Tema "{{ tema.nome }}"</h2>
+<h3>Palavras do tema: {{ tema.nome }}</h3>
 
-<a href="{% url 'palavra-create' tema.pk %}" class="btn btn-primary mb-3">+ Adicionar Palavra</a>
-<a href="{% url 'tema-gerenciar' %}" class="btn btn-secondary mb-3">Voltar aos Temas</a>
+<a href="{% url 'palavra-create' tema.pk %}" class="btn btn-success mb-3">➕ Nova Palavra</a>
 
-<table class="table table-bordered">
-  <thead>
-    <tr>
-      <th>Palavra</th>
-      <th>Ações</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for palavra in palavras %}
-    <tr>
-      <td>{{ palavra.nome }}</td>
-      <td>
-        <a href="{% url 'palavra-update' palavra.pk %}" class="btn btn-sm btn-warning">Editar</a>
+<ul class="list-group">
+  {% for palavra in palavras %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      {{ palavra.texto }} - <em>{{ palavra.dica }}</em>
+      <div>
+        <a href="{% url 'palavra-update' palavra.pk %}" class="btn btn-sm btn-warning me-2">Editar</a>
         <a href="{% url 'palavra-delete' palavra.pk %}" class="btn btn-sm btn-danger">Excluir</a>
-      </td>
-    </tr>
-    {% empty %}
-    <tr>
-      <td colspan="2">Nenhuma palavra cadastrada para este tema.</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+      </div>
+    </li>
+  {% empty %}
+    <li class="list-group-item">Nenhuma palavra cadastrada.</li>
+  {% endfor %}
+</ul>
 {% endblock %}

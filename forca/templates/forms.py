@@ -1,6 +1,7 @@
 from django import forms
+from django.forms import inlineformset_factory
 from django.contrib.auth.models import User
-from .models import Aluno
+from .models import Aluno, Tema, Palavra
 
 class UserRegisterForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)
@@ -17,3 +18,20 @@ class UserRegisterForm(forms.ModelForm):
             user.save()
             aluno = Aluno.objects.create(user=user, nome=self.cleaned_data['nome'])
         return user
+
+class TemaForm(forms.ModelForm):
+    class Meta:
+        model = Tema
+        fields = ['nome']
+
+class PalavraForm(forms.ModelForm):
+    class Meta:
+        model = Palavra
+        fields = ['texto', 'dica', 'texto_extra']
+
+PalavraFormSet = inlineformset_factory(
+    Tema, Palavra,
+    form=PalavraForm,
+    extra=1,
+    can_delete=True
+)
