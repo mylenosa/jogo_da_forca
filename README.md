@@ -1,41 +1,52 @@
-# Jogo da Forca
+# Jogo da Forca - Projeto Django
 
-Aplicação web Django para um jogo da forca com gerenciamento de temas e palavras por professores, e acesso para alunos jogarem com ou sem cadastro.
+## Descrição
 
----
+Este projeto é uma aplicação web de um jogo da forca, desenvolvido em Django utilizando Class Based Views (CBV). 
 
-## Funcionalidades principais
-
-- Cadastro e login para professores (usuários staff) para criação/edição/exclusão de temas e palavras.
-- Alunos podem jogar sem cadastro, ou se cadastrar para ter histórico.
-- Escolha de temas e palavras para jogar, filtrando por tema ou professor.
-- Interface responsiva com Bootstrap.
-- Professores podem gerar PDFs das atividades para imprimir.
-- Relatórios para professores com dados de jogadas por aluno, tema e período.
-- Deploy simples para servidores como PythonAnywhere.
+O sistema contempla dois tipos de usuários principais: **professores** e **alunos**. Professores podem criar temas e adicionar palavras com dicas, enquanto alunos podem jogar escolhendo temas ou professores, mesmo sem estar logados.
 
 ---
 
-## Requisitos
+## O que foi implementado
 
-- Python 3.8+
-- Django 5.2.3
-- Bootstrap 5 (via CDN)
-- Pacotes listados em `requirements.txt`
+- **Autenticação e cadastro:**  
+  - Professores (usuários staff) podem se cadastrar e acessar área restrita.  
+  - Alunos podem se cadastrar e jogar sem login, ou com login caso exigido.
+
+- **Gerenciamento de temas e palavras (somente professores):**  
+  - Professores criam, editam e excluem temas.  
+  - Podem adicionar palavras a temas, com texto, dicas e informações extras opcionais.
+
+- **Jogabilidade:**  
+  - Alunos escolhem tema ou professor para jogar.  
+  - Palavra é selecionada aleatoriamente para o jogo da forca.  
+  - Sistema registra erros e acertos do aluno.  
+  - API simples para obter palavra e salvar jogadas.
+
+- **Interface:**  
+  - Uso do Bootstrap 5 para o front-end.  
+  - Layout responsivo e navegação básica.
+
+- **Relatórios e PDF (parcial):**  
+  - Área para professores visualizarem temas criados.  
+  - (Implementação do PDF e relatórios completos pendente).
 
 ---
 
-## Instalação rápida
+## O que falta para cumprir todos os requisitos
 
-```bash
-git clone <URL_DO_REPOSITORIO>
-cd jogo-da-forca
-python -m venv venv
-source venv/bin/activate       # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
+- **Cadastro obrigatório para alunos, quando exigido pelo professor.**  
+- **Geração de PDFs das atividades para impressão.**  
+- **Relatórios detalhados:**  
+  - Visualizar quais alunos jogaram por tema e por período (datas).  
+- **Deploy:**  
+  - Publicar a aplicação em servidor como PythonAnywhere, Heroku ou similar.  
+- **Testes automatizados e validação completa dos formulários e views.**  
+- **Melhorias na UI/UX do jogo, incluindo feedbacks visuais mais claros.**  
+- **Sistema de permissões refinado, garantindo que somente professores possam criar/editar/excluir.**
+
+---
 
 ## Usuários de teste incluídos
 
@@ -46,34 +57,12 @@ python manage.py runserver
 
 ---
 
-## Estrutura do projeto
+## Como rodar o projeto
 
-- `forca/` — App principal do jogo e gerenciamento.
-- `templates/` — Templates HTML baseados em Bootstrap.
-- `static/` — Arquivos estáticos (CSS, JS, imagens).
-- `models.py` — Modelos para Tema, Palavra, Aluno, Partida e Jogada.
-- `views.py` — Views baseadas em Classes (Class-Based Views).
-- `urls.py` — Rotas da aplicação.
-- `forms.py` — Formulários customizados.
-- `requirements.txt` — Dependências do projeto.
-
----
-
-## Regras e fluxos
-
-- Professores criam temas e adicionam palavras com dicas e textos extras.
-- Alunos escolhem tema ou professor para jogar.
-- Jogo da forca com sistema de erros, dicas e palavras randomizadas.
-- Professores visualizam relatórios e geram PDFs para impressão.
-
----
-
-## Deploy
-
-Projeto pode ser facilmente implantado em servidores como PythonAnywhere, Heroku, etc., seguindo a documentação oficial de deploy do Django.
-
----
-
-## Contato
-
-Para dúvidas ou sugestões, entre em contato com o professor ou mantenedor do projeto.
+```bash
+python -m venv venv
+source venv/bin/activate  # ou `venv\Scripts\activate` no Windows
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py createsuperuser  # se desejar criar administrador
+python manage.py runserver
