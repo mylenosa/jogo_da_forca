@@ -21,7 +21,10 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = os.environ.get('DEBUG') == 'True'
+
+# ADICIONE ESTA LINHA DE TESTE:
+print(f"--- MODO DE DEPURACÃO (DEBUG): {DEBUG} ---")
 
 ALLOWED_HOSTS = ['mylenosa.pythonanywhere.com', '127.0.0.1', 'localhost']
 
