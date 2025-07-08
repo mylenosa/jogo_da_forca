@@ -7,18 +7,22 @@
 
     <div class="mb-3">
       <h2 class="d-inline">
-        <label for="{{ form_tema.nome.id_for_label }}">Tema:</label>
+        {# AQUI ESTÁ A CORREÇÃO #}
+        <label for="{{ form.nome.id_for_label }}">Tema:</label>
       </h2>
-      {{ form_tema.nome }}
+      {# E AQUI #}
+      {{ form.nome }}
     </div>
 
     <div class="form-check mb-3">
-        {{ form_tema.login_obrigatorio }}
-        <label class="form-check-label" for="{{ form_tema.login_obrigatorio.id_for_label }}">
+        {# E AQUI TAMBÉM #}
+        {{ form.login_obrigatorio }}
+        <label class="form-check-label" for="{{ form.login_obrigatorio.id_for_label }}">
             Login obrigatório
         </label>
     </div>
 
+    {# O resto do ficheiro continua exatamente igual... #}
     <div class="alert alert-info">
       <strong>Atenção:</strong> Após editar as palavras na tabela, clique no botão azul <strong>"Salvar alterações"</strong> no final da página para gravar tudo.
     </div>
