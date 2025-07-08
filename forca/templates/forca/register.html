@@ -1,12 +1,29 @@
 {% extends 'forca/base.html' %}
-
-{% block title %}Cadastro de Aluno{% endblock %}
+{% load django_bootstrap5 %}
 
 {% block content %}
-<h2>Cadastro de Aluno</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button class="btn btn-success" type="submit">Cadastrar</button>
-</form>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm mt-5">
+                <div class="card-body p-4">
+                    <h2 class="card-title text-center mb-4">Cadastre-se</h2>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {% bootstrap_form form %}
+                        <div class="d-grid">
+                           <button type="submit" class="btn btn-primary btn-block mt-3">Cadastrar</button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <p class="mb-0">Já tem uma conta?</p>
+                        <a href="{% url 'login' %}">Faça o login aqui</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
