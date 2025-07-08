@@ -35,5 +35,5 @@ urlpatterns = [
     # Professores e temas por professor
     path('professores/', views.ProfessorListView.as_view(), name='professor_list'),
     path('professor/<int:professor_id>/temas/', views.TemaPorProfessorListView.as_view(), name='tema_por_professor'),
-
+    path('professor/tema/<int:pk>/pdf/', views.TemaPDFView.as_view(), name='tema-pdf'),
 ]

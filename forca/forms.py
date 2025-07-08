@@ -16,13 +16,18 @@ class UserRegisterForm(forms.ModelForm):
         user.set_password(self.cleaned_data['password'])
         if commit:
             user.save()
-            aluno = Aluno.objects.create(user=user, nome=self.cleaned_data['nome'])
+            Aluno.objects.create(user=user, nome=self.cleaned_data['nome'])
         return user
 
 class TemaForm(forms.ModelForm):
     class Meta:
         model = Tema
         fields = ['nome', 'login_obrigatorio']
+        # Adicionando widgets para melhor estilização com Bootstrap
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control form-control-lg', 'style': 'display: inline; width: auto;'}),
+            'login_obrigatorio': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
 
 class PalavraForm(forms.ModelForm):
     class Meta:
@@ -37,6 +42,6 @@ PalavraFormSet = inlineformset_factory(
     Tema,
     Palavra,
     form=PalavraForm,
-    extra=1,
+    extra=0,  # <-- MUDANÇA AQUI: de 1 para 0
     can_delete=True
 )

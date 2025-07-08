@@ -16,6 +16,9 @@ from django.db.models import Q
 from django.urls import reverse_lazy, reverse
 from .models import Tema, Palavra, Jogada, Professor
 from .forms import UserRegisterForm, TemaForm, PalavraForm, PalavraFormSet
+from django.template.loader import render_to_string
+from weasyprint import HTML
+from django.http import HttpResponse
 
 
 class HomeView(TemplateView):
@@ -59,16 +62,39 @@ class ProfessorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
 
 class TemaCreateView(LoginRequiredMixin, CreateView):
     model = Tema
-    fields = ['nome', 'login_obrigatorio']
+    form_class = TemaForm
     template_name = 'forca/tema_form.html'
+    success_url = reverse_lazy('tema-gerenciar')
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        if self.request.POST:
+            data['formset_palavras'] = PalavraFormSet(self.request.POST, prefix='palavras')
+        else:
+            data['formset_palavras'] = PalavraFormSet(queryset=Palavra.objects.none(), prefix='palavras')
+        return data
 
     def form_valid(self, form):
-        form.instance.criado_por = self.request.user
-        return super().form_valid(form)
+        context = self.get_context_data()
+        formset = context['formset_palavras']
 
-    def get_success_url(self):
-        return reverse('tema-gerenciar')
+        if form.is_valid() and formset.is_valid():
+            form.instance.criado_por = self.request.user
+            # Primeiro, salva o objeto Tema para obter um ID
+            self.object = form.save()
 
+            # Associa o formset ao novo tema e salva as palavras
+            formset.instance = self.object
+            instances = formset.save(commit=False)
+            for instance in instances:
+                instance.criado_por = self.request.user
+                instance.save()
+            formset.save_m2m()
+
+            return redirect(self.get_success_url())
+        else:
+            # Se houver erros, renderiza o formulário novamente com as mensagens de erro
+            return self.render_to_response(self.get_context_data(form=form))
 
 class PalavraCreateView(LoginRequiredMixin, CreateView):
     model = Palavra
@@ -310,3 +336,32 @@ class TemaPorProfessorListView(ListView):
         professor_id = self.kwargs['professor_id']
         # Assumindo que o modelo 'Tema' tem um campo 'criado_por' que é um ForeignKey para User (Professor)
         return Tema.objects.filter(criado_por__id=professor_id)
+
+class TemaPDFView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        # Garante que o usuário seja um professor
+        return self.request.user.is_staff
+
+    def get(self, request, *args, **kwargs):
+        # Pega o tema de forma segura, garantindo que pertence ao professor logado
+        pk = self.kwargs.get('pk')
+        tema = get_object_or_404(Tema, pk=pk, criado_por=request.user)
+        palavras = tema.palavras.all()
+
+        # Contexto para o template
+        context = {
+            'tema': tema,
+            'palavras': palavras,
+        }
+
+        # Renderiza o template HTML em uma string
+        html_string = render_to_string('forca/tema_pdf.html', context)
+
+        # Gera o PDF a partir da string HTML
+        pdf_file = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+
+        # Cria a resposta HTTP com o conteúdo do PDF
+        response = HttpResponse(pdf_file, content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="tema_{tema.nome}.pdf"'
+
+        return response

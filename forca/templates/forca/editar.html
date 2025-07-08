@@ -2,11 +2,24 @@
 
 {% block content %}
 <div class="container mt-4">
-  <h2>Editar Tema: {{ form_tema.instance.nome }}</h2>
-
   <form method="post" id="form-tema-palavras">
     {% csrf_token %}
-    {{ form_tema.as_p }}
+
+    {# NOVO LAYOUT PARA O TÍTULO E CAMPO DE NOME #}
+    <div class="mb-3">
+      <h2 class="d-inline">
+        <label for="{{ form_tema.nome.id_for_label }}">Tema:</label>
+      </h2>
+      {{ form_tema.nome }}
+    </div>
+
+    {# RENDERIZANDO O CHECKBOX SEPARADAMENTE COM ESTILO BOOTSTRAP #}
+    <div class="form-check mb-3">
+        {{ form_tema.login_obrigatorio }}
+        <label class="form-check-label" for="{{ form_tema.login_obrigatorio.id_for_label }}">
+            Login obrigatório
+        </label>
+    </div>
 
     <hr>
     <h4>Palavras</h4>
@@ -93,7 +106,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     const tableBody = document.querySelector('#table-palavras tbody');
     const addBtn = document.getElementById('add-palavra');
-    // Corrigido: o prefixo é 'palavras', conforme definido na view
     const totalFormsInput = document.querySelector('#id_palavras-TOTAL_FORMS');
     const formTemplate = document.getElementById('palavra-form-template');
 
@@ -131,7 +143,6 @@ document.addEventListener('DOMContentLoaded', function () {
             deleteCheckbox.checked = true;
             row.style.display = 'none';
         } else {
-            // Se for uma linha nova que ainda não foi salva, apenas remove do DOM
             row.remove();
         }
     }
@@ -145,36 +156,28 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Adiciona eventos aos botões existentes
     tableBody.querySelectorAll('.palavra-form-row').forEach(row => {
         addEventListeners(row);
-        // Garante que os inputs de edição comecem escondidos
         row.querySelectorAll('.edit-texto, .edit-dica').forEach(input => {
             input.style.display = 'none';
         });
     });
 
-    // Adicionar nova palavra
     addBtn.addEventListener('click', function () {
         let formIndex = parseInt(totalFormsInput.value);
 
-        // Clona o template
         const newRowContent = formTemplate.innerHTML.replace(/__prefix__/g, formIndex);
         const newRow = document.createElement('tr');
         newRow.innerHTML = newRowContent;
         newRow.classList.add('palavra-form-row');
 
-        // Insere a nova linha na tabela
         tableBody.appendChild(newRow);
 
-        // Adiciona os event listeners para a nova linha
         addEventListeners(newRow);
 
-        // Força a nova linha a entrar em modo de edição imediatamente
         const newEditButton = newRow.querySelector('.toggle-edit');
         toggleEdit(newEditButton);
 
-        // Atualiza o contador de formulários
         totalFormsInput.value = formIndex + 1;
     });
 });

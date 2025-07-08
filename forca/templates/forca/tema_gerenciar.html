@@ -1,32 +1,23 @@
-<!-- forca/templates/forca/tema_gerenciar.html -->
-
 {% extends 'forca/base.html' %}
-{% block title %}Meus Temas{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-  <h2>Meus Temas</h2>
-  <a href="{% url 'tema-create' %}" class="btn btn-primary mb-3">Novo Tema</a>
-
-  {% if temas %}
+    <h2>Meus Temas</h2>
+    <a href="{% url 'tema-create' %}" class="btn btn-primary mb-3">Criar Novo Tema</a>
     <ul class="list-group">
-      {% for tema in temas %}
+        {% for tema in temas %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <div>
-            <strong>{{ tema.nome }}</strong>
-            {% if tema.login_obrigatorio %}
-              <span class="badge bg-warning text-dark ms-2">Login obrigatório</span>
-            {% endif %}
-          </div>
-          <div>
-            <a href="{% url 'tema-editar' tema.pk %}" class="btn btn-outline-warning btn-sm">Editar</a>
-            <a href="{% url 'tema-delete' tema.pk %}" class="btn btn-outline-danger btn-sm">Excluir</a>
-          </div>
+            {{ tema.nome }}
+            <div>
+                {# ADICIONE O BOTÃO/LINK PARA O PDF AQUI #}
+                <a href="{% url 'tema-pdf' pk=tema.pk %}" class="btn btn-info btn-sm" target="_blank">PDF</a>
+                <a href="{% url 'editar-tema' pk=tema.pk %}" class="btn btn-warning btn-sm">Editar</a>
+                <a href="{% url 'tema-delete' pk=tema.pk %}" class="btn btn-danger btn-sm">Deletar</a>
+            </div>
         </li>
-      {% endfor %}
+        {% empty %}
+        <li class="list-group-item">Você ainda não criou nenhum tema.</li>
+        {% endfor %}
     </ul>
-  {% else %}
-    <p class="text-muted">Nenhum tema cadastrado ainda.</p>
-  {% endif %}
 </div>
 {% endblock %}
