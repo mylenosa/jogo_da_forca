@@ -1,39 +1,32 @@
-{% extends 'forca/base.html' %}
-{% block content %}
+<!-- forca/templates/forca/tema_gerenciar.html -->
 
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Gerenciar Temas</h2>
-    <a href="{% url 'tema-create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-lg"></i> Novo Tema
-    </a>
-  </div>
+{% extends 'forca/base.html' %}
+{% block title %}Meus Temas{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Meus Temas</h2>
+  <a href="{% url 'tema-create' %}" class="btn btn-primary mb-3">Novo Tema</a>
 
   {% if temas %}
-    <div class="row row-cols-1 row-cols-md-2 g-4">
+    <ul class="list-group">
       {% for tema in temas %}
-        <div class="col">
-          <div class="card shadow-sm h-100">
-            <div class="card-body">
-              <h5 class="card-title">{{ tema.nome }}</h5>
-              <p class="card-text">
-                <strong>Palavras:</strong> {{ tema.palavras.count }}
-              </p>
-              <div class="d-flex gap-2">
-                <a href="{% url 'palavra-list' tema.pk %}" class="btn btn-outline-secondary btn-sm">Palavras</a>
-                <a href="{% url 'tema-update' tema.pk %}" class="btn btn-outline-primary btn-sm">Editar</a>
-                <a href="{% url 'tema-delete' tema.pk %}" class="btn btn-outline-danger btn-sm">Excluir</a>
-              </div>
-            </div>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ tema.nome }}</strong>
+            {% if tema.login_obrigatorio %}
+              <span class="badge bg-warning text-dark ms-2">Login obrigatório</span>
+            {% endif %}
           </div>
-        </div>
+          <div>
+            <a href="{% url 'tema-editar' tema.pk %}" class="btn btn-outline-warning btn-sm">Editar</a>
+            <a href="{% url 'tema-delete' tema.pk %}" class="btn btn-outline-danger btn-sm">Excluir</a>
+          </div>
+        </li>
       {% endfor %}
-    </div>
+    </ul>
   {% else %}
-    <div class="alert alert-info">
-      Nenhum tema criado ainda. Clique em <strong>"Novo Tema"</strong> para começar!
-    </div>
+    <p class="text-muted">Nenhum tema cadastrado ainda.</p>
   {% endif %}
 </div>
-
 {% endblock %}

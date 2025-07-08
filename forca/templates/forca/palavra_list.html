@@ -1,21 +1,31 @@
 {% extends 'forca/base.html' %}
 
+{% block title %}Palavras do Tema "{{ tema.nome }}"{% endblock %}
+
 {% block content %}
-<h3>Palavras do tema: {{ tema.nome }}</h3>
+<div class="container mt-4">
+  <h2>Palavras do Tema: {{ tema.nome }}</h2>
 
-<a href="{% url 'palavra-create' tema.pk %}" class="btn btn-success mb-3">➕ Nova Palavra</a>
+  {% if tema.login_obrigatorio and not user.is_authenticated %}
+    <div class="alert alert-warning">Você precisa estar logado para acessar as palavras deste tema.</div>
+  {% else %}
+    <a href="{% url 'palavra-create' tema.pk %}" class="btn btn-primary mb-3">Nova Palavra</a>
 
-<ul class="list-group">
-  {% for palavra in palavras %}
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-      {{ palavra.texto }} - <em>{{ palavra.dica }}</em>
-      <div>
-        <a href="{% url 'palavra-update' palavra.pk %}" class="btn btn-sm btn-warning me-2">Editar</a>
-        <a href="{% url 'palavra-delete' palavra.pk %}" class="btn btn-sm btn-danger">Excluir</a>
-      </div>
-    </li>
-  {% empty %}
-    <li class="list-group-item">Nenhuma palavra cadastrada.</li>
-  {% endfor %}
-</ul>
+    {% if palavras %}
+      <ul class="list-group">
+        {% for palavra in palavras %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>{{ palavra.texto }}</div>
+            <div>
+              <a href="{% url 'palavra-update' tema.pk palavra.pk %}" class="btn btn-outline-warning btn-sm">Editar</a>
+              <a href="{% url 'palavra-delete' tema.pk palavra.pk %}" class="btn btn-outline-danger btn-sm">Excluir</a>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted">Nenhuma palavra cadastrada ainda.</p>
+    {% endif %}
+  {% endif %}
+</div>
 {% endblock %}

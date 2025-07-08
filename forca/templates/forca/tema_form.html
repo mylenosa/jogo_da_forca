@@ -1,15 +1,15 @@
 {% extends 'forca/base.html' %}
 
-{% block title %}Editar Tema{% endblock %}
+{% block title %}{% if object %}Editar Tema{% else %}Novo Tema{% endif %}{% endblock %}
 
 {% block content %}
-  <div class="container mt-4">
-    <h2>Editar Tema</h2>
-    <form method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit" class="btn btn-primary">Salvar</button>
-      <a href="{% url 'tema-list' %}" class="btn btn-secondary">Cancelar</a>
-    </form>
-  </div>
+<div class="container mt-5" style="max-width: 600px;">
+  <h2>{% if object %}Editar Tema{% else %}Novo Tema{% endif %}</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success">Salvar</button>
+    <a href="{% url 'tema-gerenciar' %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
 {% endblock %}

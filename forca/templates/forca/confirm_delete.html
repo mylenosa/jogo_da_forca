@@ -1,0 +1,15 @@
+{% extends 'forca/base.html' %}
+
+{% block title %}Confirmar Exclusão{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 600px;">
+  <h2>Confirmar Exclusão</h2>
+  <p>Tem certeza que deseja excluir esta {{ objeto_tipo }}?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Excluir</button>
+    <a href="javascript:history.back()" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

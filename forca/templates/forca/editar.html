@@ -1,0 +1,191 @@
+{% extends 'forca/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Editar Tema: {{ form_tema.instance.nome }}</h2>
+
+  <form method="post" id="form-tema-palavras">
+    {% csrf_token %}
+    {{ form_tema.as_p }}
+
+    <hr>
+    <h4>Palavras</h4>
+    {{ formset_palavras.management_form }}
+
+    <table class="table" id="table-palavras">
+      <thead>
+        <tr>
+          <th>Texto</th>
+          <th>Dica</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for form in formset_palavras %}
+        <tr class="palavra-form-row">
+          <td>
+            <span class="view-texto">{{ form.instance.texto }}</span>
+            {{ form.texto }}
+          </td>
+          <td>
+            <span class="view-dica">{{ form.instance.dica }}</span>
+            {{ form.dica }}
+          </td>
+          <td>
+            {% if form.instance.pk %}
+              <button type="button" class="btn btn-sm btn-warning toggle-edit">Editar</button>
+              <button type="button" class="btn btn-sm btn-danger delete-row">Excluir</button>
+              <div class="d-none">
+                {{ form.DELETE }}
+              </div>
+            {% else %}
+              <button type="button" class="btn btn-sm btn-warning toggle-edit">Editar</button>
+              <button type="button" class="btn btn-sm btn-danger delete-row">Excluir</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <button type="button" id="add-palavra" class="btn btn-success mb-3">Adicionar palavra</button>
+
+    <br>
+    <button type="submit" class="btn btn-primary">Salvar alterações</button>
+    <a href="{% url 'tema-gerenciar' %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<style>
+  .d-none {
+    display: none;
+  }
+
+  /* Esconde todos inputs DELETE */
+  input[type="checkbox"][name$="-DELETE"] {
+    display: none;
+  }
+
+  /* Esconder apenas os inputs das palavras */
+  .edit-texto,
+  .edit-dica {
+    display: none;
+  }
+
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.edit-texto, .edit-dica').forEach(input => {
+  input.style.display = 'none';
+  });
+
+  // Função para ativar/desativar edição em linha
+  function toggleEdit(btn) {
+    const row = btn.closest('tr');
+    const viewTexto = row.querySelector('.view-texto');
+    const viewDica = row.querySelector('.view-dica');
+    const inputTexto = row.querySelector('input[name$="texto"]');
+    const inputDica = row.querySelector('input[name$="dica"]');
+
+    const isEditing = inputTexto.style.display === 'inline-block';
+
+    if (!isEditing) {
+      // Entrar em modo edição
+      viewTexto.style.display = 'none';
+      viewDica.style.display = 'none';
+      inputTexto.style.display = 'inline-block';
+      inputDica.style.display = 'inline-block';
+      btn.textContent = 'Salvar';
+    } else {
+      // Salvar e sair do modo edição
+      viewTexto.textContent = inputTexto.value;
+      viewDica.textContent = inputDica.value;
+      viewTexto.style.display = '';
+      viewDica.style.display = '';
+      inputTexto.style.display = 'none';
+      inputDica.style.display = 'none';
+      btn.textContent = 'Editar';
+    }
+  }
+
+  // Adiciona eventos nos botões existentes
+  document.querySelectorAll('.toggle-edit').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      toggleEdit(this);
+    });
+  });
+
+  // Função para deletar a linha (marca checkbox DELETE e oculta linha)
+  document.querySelectorAll('.delete-row').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const row = btn.closest('tr');
+      const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      if (deleteCheckbox) {
+        deleteCheckbox.checked = true;
+        row.style.display = 'none';
+      } else {
+        row.remove();
+      }
+    });
+  });
+
+  // Botão adicionar palavra — clona última linha
+  const addBtn = document.getElementById('add-palavra');
+  addBtn.addEventListener('click', function () {
+    const tableBody = document.querySelector('#table-palavras tbody');
+    const totalForms = document.querySelector('#id_formset_palavras-TOTAL_FORMS');
+    let currentCount = parseInt(totalForms.value);
+
+    const emptyRow = document.querySelector('tr.palavra-form-row:last-child');
+    if (!emptyRow) return;
+
+    const newRow = emptyRow.cloneNode(true);
+
+    // Atualiza os inputs do formset para o novo índice e limpa valores
+    newRow.querySelectorAll('input, select, textarea').forEach(input => {
+      if (input.name) {
+        input.name = input.name.replace(/\-\d+\-/, `-${currentCount}-`);
+      }
+      if (input.id) {
+        input.id = input.id.replace(/\-\d+\-/, `-${currentCount}-`);
+      }
+      if (input.type === 'checkbox') {
+        input.checked = false;
+      } else {
+        input.value = '';
+      }
+    });
+
+    // Atualiza os spans para vazio
+    newRow.querySelector('.view-texto').textContent = '';
+    newRow.querySelector('.view-dica').textContent = '';
+
+    // Esconde inputs (modo visual)
+    newRow.querySelectorAll('input[name$="texto"], input[name$="dica"]').forEach(input => {
+      input.style.display = 'none';
+    });
+
+    // Ajusta botões
+    const toggleBtn = newRow.querySelector('.toggle-edit');
+    toggleBtn.textContent = 'Editar';
+
+    tableBody.appendChild(newRow);
+    totalForms.value = currentCount + 1;
+    currentCount++;
+
+    // Adiciona eventos aos novos botões da linha clonada
+    toggleBtn.addEventListener('click', function () {
+      toggleEdit(this);
+    });
+
+    const delBtn = newRow.querySelector('.delete-row');
+    delBtn.addEventListener('click', function () {
+      const row = this.closest('tr');
+      row.remove();
+      totalForms.value = parseInt(totalForms.value) - 1;
+    });
+  });
+});
+</script>
+{% endblock %}

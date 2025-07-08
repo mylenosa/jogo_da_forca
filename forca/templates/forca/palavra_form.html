@@ -1,12 +1,15 @@
 {% extends 'forca/base.html' %}
 
-{% block title %}Nova Palavra - Jogo da Forca{% endblock %}
+{% block title %}{% if object %}Editar Palavra{% else %}Nova Palavra{% endif %}{% endblock %}
 
 {% block content %}
-<h2>Cadastrar nova palavra</h2>
-<form method="post">
+<div class="container mt-5" style="max-width: 600px;">
+  <h2>{% if object %}Editar Palavra{% else %}Nova Palavra{% endif %}</h2>
+  <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    <button class="btn btn-success" type="submit">Salvar</button>
-</form>
+    <button type="submit" class="btn btn-success">Salvar</button>
+    <a href="{% url 'palavra-list' tema.pk %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
 {% endblock %}

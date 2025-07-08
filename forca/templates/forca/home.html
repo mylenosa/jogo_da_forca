@@ -1,10 +1,39 @@
 {% extends 'forca/base.html' %}
-{% block title %}Início{% endblock %}
 
 {% block content %}
-<div class="container text-center mt-5">
-  <h1 class="mb-4">Bem-vindo ao Jogo da Forca!</h1>
-  <p class="lead">Desafie-se com palavras de diferentes temas criadas por professores.</p>
-  <a href="{% url 'jogar-menu' %}" class="btn btn-lg btn-primary mt-4">🎮 Começar a Jogar</a>
+<div class="container mt-4">
+  <h1 class="mb-4 text-center">Vamos jogar!</h1>
+
+  <form method="get" class="d-flex mb-4 justify-content-center">
+    <input
+      type="text"
+      name="q"
+      class="form-control w-50 me-2"
+      placeholder="Pesquisar por tema ou professor"
+      value="{{ q }}"
+    />
+    <button type="submit" class="btn btn-primary me-2">Buscar</button>
+    <a href="{% url 'home' %}" class="btn btn-secondary">Limpar</a>
+  </form>
+
+  <div class="row">
+    {% for tema in temas %}
+      <div class="col-md-4 mb-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <h5 class="card-title">{{ tema.nome }}</h5>
+            <p class="card-text text-muted">
+              Professor: {{ tema.criado_por.username }}
+            </p>
+            <a href="{% url 'jogar' tema.id %}" class="btn btn-success">Jogar</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <p class="text-center text-muted">Nenhum tema encontrado.</p>
+      </div>
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}

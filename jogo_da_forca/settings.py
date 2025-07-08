@@ -57,10 +57,11 @@ ROOT_URLCONF = 'jogo_da_forca.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
+        'DIRS': [],  # você pode adicionar aqui um caminho absoluto para templates globais, se quiser
+        'APP_DIRS': True,  # importante estar como True para achar templates nas pastas das apps
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',

@@ -1,20 +1,24 @@
 from django.contrib.auth.models import User
+from django.urls import reverse
 from django.db import models
 from django.utils import timezone
 
 class Tema(models.Model):
     nome = models.CharField(max_length=100)
     criado_por = models.ForeignKey(User, on_delete=models.CASCADE, related_name='temas')
+    login_obrigatorio = models.BooleanField(default=False)  # ← ESTE CAMPO
 
     def __str__(self):
         return self.nome
 
+    def get_absolute_url(self):
+        return reverse('palavra-list', kwargs={'tema_pk': self.pk})
+
 class Palavra(models.Model):
+    texto = models.CharField(max_length=100)
+    dica = models.CharField(max_length=255, blank=True)
     tema = models.ForeignKey(Tema, on_delete=models.CASCADE, related_name='palavras')
-    texto = models.CharField(max_length=50)
-    dica = models.CharField(max_length=200, blank=True)
-    texto_extra = models.TextField(blank=True)
-    criado_por = models.ForeignKey(User, on_delete=models.CASCADE, related_name='palavras')
+    criado_por = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.texto
@@ -45,3 +49,10 @@ class Jogada(models.Model):
 
     def __str__(self):
         return f"Jogada de {self.aluno} na palavra {self.palavra.texto} - Acertou? {self.acertou}"
+
+class Professor(models.Model):
+    nome = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.nome
+
