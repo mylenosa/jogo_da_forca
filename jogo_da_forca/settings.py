@@ -21,7 +21,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['mylenosa.pythonanywhere.com', '127.0.0.1', 'localhost']
 
@@ -103,9 +103,11 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+# Altere 'en-us' para 'pt-br' para que as mensagens automáticas do Django (como erros de formulário) apareçam em português.
+LANGUAGE_CODE = 'pt-br'
 
-TIME_ZONE = 'UTC'
+# Altere 'UTC' para o seu fuso horário para que as datas nos modelos sejam guardadas corretamente.
+TIME_ZONE = 'America/Sao_Paulo'
 
 USE_I18N = True
 
@@ -116,7 +118,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# Esta linha já está correta e é para o desenvolvimento local
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# ADICIONE ESTA LINHA - É ESSENCIAL PARA O DEPLOY
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
