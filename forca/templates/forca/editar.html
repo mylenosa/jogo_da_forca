@@ -5,7 +5,6 @@
   <form method="post" id="form-tema-palavras">
     {% csrf_token %}
 
-    {# NOVO LAYOUT PARA O TÍTULO E CAMPO DE NOME #}
     <div class="mb-3">
       <h2 class="d-inline">
         <label for="{{ form_tema.nome.id_for_label }}">Tema:</label>
@@ -13,7 +12,6 @@
       {{ form_tema.nome }}
     </div>
 
-    {# RENDERIZANDO O CHECKBOX SEPARADAMENTE COM ESTILO BOOTSTRAP #}
     <div class="form-check mb-3">
         {{ form_tema.login_obrigatorio }}
         <label class="form-check-label" for="{{ form_tema.login_obrigatorio.id_for_label }}">
@@ -21,8 +19,20 @@
         </label>
     </div>
 
+    <div class="alert alert-info">
+      <strong>Atenção:</strong> Após editar as palavras na tabela, clique no botão azul <strong>"Salvar alterações"</strong> no final da página para gravar tudo.
+    </div>
+
     <hr>
     <h4>Palavras</h4>
+
+    {# ADICIONE ISTO PARA MOSTRAR ERROS GERAIS DO FORMSET #}
+    {% if formset_palavras.non_form_errors %}
+      <div class="alert alert-danger">
+        {{ formset_palavras.non_form_errors }}
+      </div>
+    {% endif %}
+
     {{ formset_palavras.management_form }}
 
     <table class="table" id="table-palavras">
@@ -37,10 +47,15 @@
         {% for form in formset_palavras %}
         <tr class="palavra-form-row" id="palavra-{{ forloop.counter0 }}">
           <td>
+            {# ADICIONE ESTA LINHA! Ela é a correção. #}
+            {{ form.id }}
+
+            {% if form.texto.errors %}<div class="alert alert-danger p-1">{{ form.texto.errors }}</div>{% endif %}
             <span class="view-texto">{{ form.instance.texto }}</span>
             {{ form.texto }}
           </td>
           <td>
+            {% if form.dica.errors %}<div class="alert alert-danger p-1">{{ form.dica.errors }}</div>{% endif %}
             <span class="view-dica">{{ form.instance.dica }}</span>
             {{ form.dica }}
           </td>
@@ -86,19 +101,22 @@
 
 
 <style>
-  .d-none {
-    display: none;
-  }
+  /* Esconde o checkbox de apagar */
   input[type="checkbox"][name$="-DELETE"] {
     display: none;
   }
+
+  /* Esconde os campos de input por defeito */
   .edit-texto,
   .edit-dica {
     display: none;
   }
+
+  /* Garante que os spans com o texto são sempre visíveis por defeito */
   .palavra-form-row .view-texto,
   .palavra-form-row .view-dica {
     display: inline-block;
+    min-height: 1em; /* Garante que o span ocupa espaço mesmo se vazio */
   }
 </style>
 
@@ -111,21 +129,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function toggleEdit(btn) {
         const row = btn.closest('tr');
+        // Seletores corrigidos para usar as classes dos widgets
         const viewTexto = row.querySelector('.view-texto');
         const viewDica = row.querySelector('.view-dica');
-        const inputTexto = row.querySelector('input[name$="-texto"]');
-        const inputDica = row.querySelector('input[name$="-dica"]');
+        const inputTexto = row.querySelector('.edit-texto');
+        const inputDica = row.querySelector('.edit-dica');
 
         const isEditing = inputTexto.style.display === 'inline-block';
 
         if (!isEditing) {
+            // Entra em modo de edição
             viewTexto.style.display = 'none';
             viewDica.style.display = 'none';
             inputTexto.style.display = 'inline-block';
             inputDica.style.display = 'inline-block';
-            btn.textContent = 'Salvar';
+            btn.textContent = 'OK';
             inputTexto.focus();
         } else {
+            // Sai do modo de edição
             viewTexto.textContent = inputTexto.value;
             viewDica.textContent = inputDica.value;
             viewTexto.style.display = 'inline-block';
@@ -148,33 +169,25 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function addEventListeners(row) {
-        row.querySelector('.toggle-edit').addEventListener('click', function() {
-            toggleEdit(this);
-        });
-        row.querySelector('.delete-row').addEventListener('click', function() {
-            deleteRow(this);
-        });
+        row.querySelector('.toggle-edit').addEventListener('click', function() { toggleEdit(this); });
+        row.querySelector('.delete-row').addEventListener('click', function() { deleteRow(this); });
     }
 
-    tableBody.querySelectorAll('.palavra-form-row').forEach(row => {
-        addEventListeners(row);
-        row.querySelectorAll('.edit-texto, .edit-dica').forEach(input => {
-            input.style.display = 'none';
-        });
-    });
+    // Adiciona eventos aos botões existentes ao carregar a página
+    tableBody.querySelectorAll('.palavra-form-row').forEach(addEventListeners);
 
+    // Lógica para adicionar uma nova palavra
     addBtn.addEventListener('click', function () {
         let formIndex = parseInt(totalFormsInput.value);
-
         const newRowContent = formTemplate.innerHTML.replace(/__prefix__/g, formIndex);
         const newRow = document.createElement('tr');
         newRow.innerHTML = newRowContent;
         newRow.classList.add('palavra-form-row');
-
         tableBody.appendChild(newRow);
 
         addEventListeners(newRow);
 
+        // Força a nova linha a entrar em modo de edição imediatamente
         const newEditButton = newRow.querySelector('.toggle-edit');
         toggleEdit(newEditButton);
 

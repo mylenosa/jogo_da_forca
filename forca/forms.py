@@ -38,6 +38,27 @@ class PalavraForm(forms.ModelForm):
             'dica': forms.TextInput(attrs={'class': 'edit-dica'}),
         }
 
+
+class RelatorioForm(forms.Form):
+    tema = forms.ModelChoiceField(
+        queryset=Tema.objects.all().order_by('nome'),
+        required=False,
+        label="Filtrar por Tema"
+    )
+
+    # DateField cria um campo de data, e o widget adiciona um calendário fácil de usar.
+    data_inicio = forms.DateField(
+        required=False,
+        label="De",
+        widget=forms.DateInput(attrs={'type': 'date'})
+    )
+
+    data_fim = forms.DateField(
+        required=False,
+        label="Até",
+        widget=forms.DateInput(attrs={'type': 'date'})
+    )
+
 PalavraFormSet = inlineformset_factory(
     Tema,
     Palavra,

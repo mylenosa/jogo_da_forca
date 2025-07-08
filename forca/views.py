@@ -1,5 +1,11 @@
 import random
 import json
+import io
+from django.http import FileResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch, cm
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.enums import TA_CENTER
 from django.db import models
 from django.shortcuts import redirect, get_object_or_404, render
 from django.forms import inlineformset_factory
@@ -15,9 +21,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Q
 from django.urls import reverse_lazy, reverse
 from .models import Tema, Palavra, Jogada, Professor
-from .forms import UserRegisterForm, TemaForm, PalavraForm, PalavraFormSet
-from django.template.loader import render_to_string
-from weasyprint import HTML
+from .forms import UserRegisterForm, TemaForm, PalavraForm, PalavraFormSet, RelatorioForm
+from datetime import timedelta
 from django.http import HttpResponse
 
 
@@ -290,36 +295,52 @@ class PalavraDeleteView(LoginRequiredMixin, DeleteView):
 
 
 def editar(request, pk):
+    """
+    View para editar um tema e as suas palavras, com depuração detalhada.
+    """
     tema = get_object_or_404(Tema, pk=pk, criado_por=request.user)
-    form_tema = TemaForm(request.POST or None, instance=tema)
-
-    # É crucial definir um prefixo para o formset para que o Django possa diferenciá-lo de outros forms.
-    # O prefixo 'palavras' é uma boa escolha.
-    formset_palavras = PalavraFormSet(request.POST or None, instance=tema, prefix='palavras')
 
     if request.method == 'POST':
-        if form_tema.is_valid() and formset_palavras.is_valid():
+        # Esta secção é executada quando clica em "Salvar alterações"
+        print("\n--- INÍCIO DA DEPURACÃO DO POST ---")
+        form_tema = TemaForm(request.POST, instance=tema)
+        formset_palavras = PalavraFormSet(request.POST, instance=tema, prefix='palavras')
+
+        form_tema_valid = form_tema.is_valid()
+        formset_palavras_valid = formset_palavras.is_valid()
+
+        print(f"[DEBUG] O formulário do tema é válido? -> {form_tema_valid}")
+        print(f"[DEBUG] O formulário das palavras é válido? -> {formset_palavras_valid}")
+
+        # Se o formset das palavras não for válido, vamos ver exatamente porquê
+        if not formset_palavras_valid:
+            print("[!!!] ERROS ENCONTRADOS NO FORMULÁRIO DAS PALAVRAS:")
+            for i, form in enumerate(formset_palavras):
+                if form.errors:
+                    print(f"  - Erros na Palavra #{i + 1}: {form.errors.as_json()}")
+
+            if formset_palavras.non_form_errors():
+                print(f"  - Erros Gerais do Formset: {formset_palavras.non_form_errors()}")
+
+        if form_tema_valid and formset_palavras_valid:
+            print("[DEBUG] Sucesso! Ambos os formulários são válidos. A salvar no banco de dados...")
             form_tema.save()
-
-            # Precisamos salvar o criador de cada nova palavra
-            instances = formset_palavras.save(commit=False)
-            for instance in instances:
-                if instance.pk is None:  # Se é uma nova palavra
-                    instance.criado_por = request.user
-                instance.save()
-
-            # Salvar as relações many-to-many e deletar os objetos marcados
-            formset_palavras.save_m2m()
-            for form in formset_palavras.deleted_forms:
-                form.instance.delete()
-
+            formset_palavras.save()  # O método .save() já trata de criar, editar e apagar.
+            print("[DEBUG] Salvo com sucesso! A redirecionar...")
             return redirect('tema-gerenciar')
+        else:
+            print("[!!!] FALHA NA VALIDAÇÃO. A página será recarregada, descartando as alterações.")
+            print("--- FIM DA DEPURACÃO DO POST ---\n")
 
+    else:  # GET request
+        form_tema = TemaForm(instance=tema)
+        formset_palavras = PalavraFormSet(instance=tema, prefix='palavras')
+
+    # O template é renderizado aqui, tanto para o acesso inicial (GET) como em caso de erro no POST
     return render(request, 'forca/editar.html', {
         'form_tema': form_tema,
         'formset_palavras': formset_palavras
     })
-
 
 class ProfessorListView(ListView):
     model = Professor
@@ -338,30 +359,163 @@ class TemaPorProfessorListView(ListView):
         return Tema.objects.filter(criado_por__id=professor_id)
 
 class TemaPDFView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """
+    Gera uma folha de atividade em PDF para um tema, incluindo uma página
+    de gabarito para o professor. VERSÃO DE CORREÇÃO.
+    """
+
     def test_func(self):
-        # Garante que o usuário seja um professor
+        # Apenas professores podem aceder a isto
         return self.request.user.is_staff
 
     def get(self, request, *args, **kwargs):
-        # Pega o tema de forma segura, garantindo que pertence ao professor logado
+        # 1. Obter os dados do banco de dados
         pk = self.kwargs.get('pk')
         tema = get_object_or_404(Tema, pk=pk, criado_por=request.user)
         palavras = tema.palavras.all()
 
-        # Contexto para o template
-        context = {
-            'tema': tema,
-            'palavras': palavras,
-        }
+        # 2. Preparar o "arquivo" PDF na memória
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter  # width=612, height=792
 
-        # Renderiza o template HTML em uma string
-        html_string = render_to_string('forca/tema_pdf.html', context)
+        # ==================================================================
+        # PARTE 1: DESENHAR A FOLHA DE ATIVIDADES PARA O ALUNO
+        # ==================================================================
 
-        # Gera o PDF a partir da string HTML
-        pdf_file = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+        # Desenhar cabeçalho da primeira página
+        p.setFont("Helvetica", 9)
+        p.drawString(inch, height - 0.5 * inch, "Escola: _________________________________________")
+        p.drawString(width / 2, height - 0.5 * inch, "Aluno(a): _______________________________________")
+        p.line(inch, height - 0.7 * inch, width - inch, height - 0.7 * inch)
 
-        # Cria a resposta HTTP com o conteúdo do PDF
-        response = HttpResponse(pdf_file, content_type='application/pdf')
-        response['Content-Disposition'] = f'inline; filename="tema_{tema.nome}.pdf"'
+        # Desenhar título da atividade
+        p.setFont("Helvetica-Bold", 18)
+        p.drawCentredString(width / 2.0, height - 1.2 * inch, f"Jogo da Forca: {tema.nome}")
+        p.setFont("Helvetica", 12)
+        p.drawCentredString(width / 2.0, height - 1.6 * inch, "Complete os espaços com as letras corretas!")
 
-        return response
+        # Posição Y inicial (vertical), começando de cima para baixo
+        y_position = height - 2.5 * inch
+
+        # Loop para desenhar cada palavra na folha de atividades
+        for i, palavra in enumerate(palavras):
+            # Verificar se precisamos de uma nova página
+            if y_position < 2.5 * inch:
+                p.showPage()  # Termina a página atual e começa uma nova
+                # Desenhar o cabeçalho novamente na nova página
+                p.setFont("Helvetica", 9)
+                p.drawString(inch, height - 0.5 * inch, "Escola: _________________________________________")
+                p.drawString(width / 2, height - 0.5 * inch, "Aluno(a): _______________________________________")
+                p.line(inch, height - 0.7 * inch, width - inch, height - 0.7 * inch)
+                y_position = height - 1.2 * inch  # Reiniciar a posição Y no topo
+
+            # Desenhar o número da palavra e a dica
+            p.setFont("Helvetica-Bold", 14)
+            p.drawString(inch, y_position, f"{i + 1}. Palavra:")
+            if palavra.dica:
+                p.setFont("Helvetica-Oblique", 11)
+                p.drawString(inch * 3, y_position, f"(Dica: {palavra.dica})")
+
+            y_position -= 0.5 * inch  # Mover para baixo para os quadrados
+
+            # Desenhar os quadrados para as letras
+            letter_box_size = 0.3 * inch
+            start_x = inch
+            for letra in palavra.texto:
+                if letra == ' ':
+                    start_x += letter_box_size + 5
+                else:
+                    p.rect(start_x, y_position, letter_box_size, letter_box_size)
+                    start_x += letter_box_size + 5
+
+            y_position -= 1.2 * inch  # Mover para baixo para a próxima palavra
+
+        # ==================================================================
+        # PARTE 2: DESENHAR A PÁGINA DE GABARITO (RESPOSTAS)
+        # ==================================================================
+
+        # Forçar o início de uma nova página para o gabarito
+        p.showPage()
+
+        # Desenhar cabeçalho da página de gabarito
+        p.setFont("Helvetica", 9)
+        p.drawString(inch, height - 0.5 * inch, "Escola: _________________________________________")
+        p.drawString(width / 2, height - 0.5 * inch, "Aluno(a): _______________________________________")
+        p.line(inch, height - 0.7 * inch, width - inch, height - 0.7 * inch)
+
+        # Desenhar título do gabarito
+        p.setFont("Helvetica-Bold", 18)
+        p.drawCentredString(width / 2.0, height - 1.2 * inch, "GABARITO - Respostas")
+        p.setFont("Helvetica-Oblique", 12)
+        p.drawCentredString(width / 2.0, height - 1.5 * inch, f"(Tema: {tema.nome})")
+
+        # --- A LÓGICA DE DESENHO DO GABARITO COMEÇA AQUI ---
+        # REINICIAR a posição Y para o conteúdo do gabarito
+        y_position = height - 2.5 * inch
+        p.setFont("Helvetica", 12)
+
+        # Loop para escrever cada resposta
+        for i, palavra in enumerate(palavras):
+            # Verificar se precisamos de uma nova página PARA O GABARITO
+            if y_position < inch:
+                p.showPage()  # Termina a página atual e começa uma nova
+                # Desenhar o cabeçalho novamente
+                p.setFont("Helvetica", 9)
+                p.drawString(inch, height - 0.5 * inch, "Escola: _________________________________________")
+                p.drawString(width / 2, height - 0.5 * inch, "Aluno(a): _______________________________________")
+                p.line(inch, height - 0.7 * inch, width - inch, height - 0.7 * inch)
+                p.setFont("Helvetica-Bold", 12)
+                p.drawCentredString(width / 2.0, height - inch, "GABARITO (continuação)")
+                y_position = height - 1.5 * inch  # Reiniciar a posição Y
+
+            # Definir a fonte para a resposta
+            p.setFont("Helvetica", 12)
+            # Desenhar a resposta
+            p.drawString(inch, y_position, f"{i + 1}. {palavra.texto.upper()}")
+            # Mover a posição para baixo para a próxima resposta
+            y_position -= 0.5 * inch
+
+        # 3. Finalizar e salvar o PDF
+        p.save()
+
+        # 4. Enviar o PDF para o browser
+        buffer.seek(0)
+        return FileResponse(buffer, as_attachment=False, filename=f'atividade_{tema.nome}.pdf')
+
+
+class RelatorioJogadasView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'forca/relatorio.html'
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        form = RelatorioForm(self.request.GET or None)
+        form.fields['tema'].queryset = Tema.objects.filter(criado_por=self.request.user).order_by('nome')
+
+        context['form'] = form
+        jogadas = []
+
+        if form.is_valid():
+            tema = form.cleaned_data.get('tema')
+            data_inicio = form.cleaned_data.get('data_inicio')
+            data_fim = form.cleaned_data.get('data_fim')
+
+            query_jogadas = Jogada.objects.filter(palavra__tema__criado_por=self.request.user)
+
+            if tema:
+                query_jogadas = query_jogadas.filter(palavra__tema=tema)
+            if data_inicio:
+                # CORREÇÃO AQUI: de 'criado_em__gte' para 'data__gte'
+                query_jogadas = query_jogadas.filter(data__gte=data_inicio)
+            if data_fim:
+                # CORREÇÃO AQUI: de 'criado_em__lte' para 'data__lte'
+                query_jogadas = query_jogadas.filter(data__lte=data_fim + timedelta(days=1))
+
+            # CORREÇÃO AQUI: de '-criado_em' para '-data'
+            jogadas = query_jogadas.select_related('aluno', 'palavra__tema').order_by('-data')
+
+        context['jogadas'] = jogadas
+        return context
