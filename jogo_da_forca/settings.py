@@ -12,17 +12,16 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+# Replace the old SECRET_KEY logic with this line
+SECRET_KEY = 'django-insecure-qz)6z3x!j@v97zs&of$omp!5udyph0qtv_sou)f2fqcmqx2+@+'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['mylenosa.pythonanywhere.com']
+ALLOWED_HOSTS = ['mylenosa.pythonanywhere.com', '127.0.0.1', 'localhost']
 
 
 # Application definition
