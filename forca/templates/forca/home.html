@@ -25,7 +25,7 @@
             <p class="card-text text-muted">
               Professor: {{ tema.criado_por.username }}
             </p>
-            <a href="{% url 'jogar' tema.id %}" class="btn btn-success">Jogar</a>
+              <a href="{% url 'jogar-por-tema' pk=tema.pk %}" class="btn btn-primary">Jogar</a>
           </div>
         </div>
       </div>

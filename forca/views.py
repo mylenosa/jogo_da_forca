@@ -143,16 +143,12 @@ class JogarPorTemaView(View):
         if tema.login_obrigatorio and not request.user.is_authenticated:
             return redirect('login')
 
-        # Usamos .order_by('?') para pegar uma palavra aleatória diretamente do banco de dados
         palavra = Palavra.objects.filter(tema=tema).order_by('?').first()
 
         if palavra:
-            return redirect('jogar-palavra', palavra_id=palavra.pk)
+            return redirect('jogar-palavra', pk=palavra.pk)
         else:
-            # Esta parte pode ser melhorada para mostrar uma mensagem de erro mais amigável
-            # return render(request, 'forca/erro.html', {'mensagem': 'Nenhuma palavra disponível.'})
-            return redirect('home') # Por agora, redireciona para a home se não houver palavras
-
+            return redirect('home')
 
 class JogarPalavraView(View):
     def get(self, request, pk):
@@ -203,15 +199,19 @@ class ProfessorDashboardView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class TemaUpdateView(LoginRequiredMixin, UpdateView):
+class TemaUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Tema
     form_class = TemaForm
     template_name = 'forca/editar.html'
     success_url = reverse_lazy('tema-gerenciar')
 
+    def test_func(self):
+        # Garante que o professor só pode editar os seus próprios temas
+        return self.get_object().criado_por == self.request.user
+
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
-        if self.request.method == 'POST':
+        if self.request.POST:
             data['formset_palavras'] = PalavraFormSet(self.request.POST, instance=self.object, prefix='palavras')
         else:
             data['formset_palavras'] = PalavraFormSet(instance=self.object, prefix='palavras')
@@ -220,18 +220,15 @@ class TemaUpdateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         context = self.get_context_data()
         formset = context['formset_palavras']
-        if formset.is_valid():
+
+        if form.is_valid() and formset.is_valid():
             self.object = form.save()
             formset.instance = self.object
-            # Adicionar o 'criado_por' para novas palavras
-            for form_palavra in formset:
-                if form_palavra.instance.pk is None and form_palavra.cleaned_data:
-                    form_palavra.instance.criado_por = self.request.user
             formset.save()
             return redirect(self.get_success_url())
         else:
+            # Se a validação falhar, renderiza a página novamente com os erros
             return self.render_to_response(self.get_context_data(form=form))
-
 
 class TemaGerenciarView(LoginRequiredMixin, ListView):
     model = Tema
@@ -296,55 +293,6 @@ class PalavraDeleteView(LoginRequiredMixin, DeleteView):
         context = super().get_context_data(**kwargs)
         context['objeto_tipo'] = 'palavra'
         return context
-
-
-def editar(request, pk):
-    """
-    View para editar um tema e as suas palavras, com depuração detalhada.
-    """
-    tema = get_object_or_404(Tema, pk=pk, criado_por=request.user)
-
-    if request.method == 'POST':
-        # Esta secção é executada quando clica em "Salvar alterações"
-        print("\n--- INÍCIO DA DEPURACÃO DO POST ---")
-        form_tema = TemaForm(request.POST, instance=tema)
-        formset_palavras = PalavraFormSet(request.POST, instance=tema, prefix='palavras')
-
-        form_tema_valid = form_tema.is_valid()
-        formset_palavras_valid = formset_palavras.is_valid()
-
-        print(f"[DEBUG] O formulário do tema é válido? -> {form_tema_valid}")
-        print(f"[DEBUG] O formulário das palavras é válido? -> {formset_palavras_valid}")
-
-        # Se o formset das palavras não for válido, vamos ver exatamente porquê
-        if not formset_palavras_valid:
-            print("[!!!] ERROS ENCONTRADOS NO FORMULÁRIO DAS PALAVRAS:")
-            for i, form in enumerate(formset_palavras):
-                if form.errors:
-                    print(f"  - Erros na Palavra #{i + 1}: {form.errors.as_json()}")
-
-            if formset_palavras.non_form_errors():
-                print(f"  - Erros Gerais do Formset: {formset_palavras.non_form_errors()}")
-
-        if form_tema_valid and formset_palavras_valid:
-            print("[DEBUG] Sucesso! Ambos os formulários são válidos. A salvar no banco de dados...")
-            form_tema.save()
-            formset_palavras.save()  # O método .save() já trata de criar, editar e apagar.
-            print("[DEBUG] Salvo com sucesso! A redirecionar...")
-            return redirect('tema-gerenciar')
-        else:
-            print("[!!!] FALHA NA VALIDAÇÃO. A página será recarregada, descartando as alterações.")
-            print("--- FIM DA DEPURACÃO DO POST ---\n")
-
-    else:  # GET request
-        form_tema = TemaForm(instance=tema)
-        formset_palavras = PalavraFormSet(instance=tema, prefix='palavras')
-
-    # O template é renderizado aqui, tanto para o acesso inicial (GET) como em caso de erro no POST
-    return render(request, 'forca/editar.html', {
-        'form_tema': form_tema,
-        'formset_palavras': formset_palavras
-    })
 
 class ProfessorListView(ListView):
     model = Professor

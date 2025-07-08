@@ -13,7 +13,7 @@ urlpatterns = [
     # Rotas do Professor
     path('professor/temas/', views.TemaGerenciarView.as_view(), name='tema-gerenciar'),
     path('professor/tema/criar/', views.TemaCreateView.as_view(), name='tema-create'),
-    path('professor/tema/<int:pk>/editar/', views.editar, name='editar-tema'),
+    path('professor/tema/<int:pk>/editar/', views.TemaUpdateView.as_view(), name='editar-tema'),
     path('professor/tema/<int:pk>/deletar/', views.TemaDeleteView.as_view(), name='tema-delete'),
     path('professor/tema/<int:pk>/pdf/', views.TemaPDFView.as_view(), name='tema-pdf'),
     path('professor/relatorio/', views.RelatorioJogadasView.as_view(), name='relatorio-jogadas'),
