@@ -135,21 +135,23 @@ class AlunoRegisterView(FormView):
         form.save()
         return super().form_valid(form)
 
+class JogarPorTemaView(View):
+    def get(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        tema = get_object_or_404(Tema, pk=pk)
 
-def jogar_por_tema(request, pk):
-    tema = get_object_or_404(Tema, pk=pk)
+        if tema.login_obrigatorio and not request.user.is_authenticated:
+            return redirect('login')
 
-    if tema.login_obrigatorio and not request.user.is_authenticated:
-        return redirect('login')
+        # Usamos .order_by('?') para pegar uma palavra aleatória diretamente do banco de dados
+        palavra = Palavra.objects.filter(tema=tema).order_by('?').first()
 
-    palavras = Palavra.objects.filter(tema=tema)
-    if palavras.exists():
-        palavra = random.choice(palavras)
-        return redirect('jogar-palavra', palavra.pk)
-    else:
-        return render(request, 'forca/erro.html', {
-            'mensagem': 'Nenhuma palavra disponível para este tema.'
-        })
+        if palavra:
+            return redirect('jogar-palavra', palavra_id=palavra.pk)
+        else:
+            # Esta parte pode ser melhorada para mostrar uma mensagem de erro mais amigável
+            # return render(request, 'forca/erro.html', {'mensagem': 'Nenhuma palavra disponível.'})
+            return redirect('home') # Por agora, redireciona para a home se não houver palavras
 
 
 class JogarPalavraView(View):
@@ -161,33 +163,35 @@ class JogarPalavraView(View):
             'dica': palavra.dica,
         })
 
+class ApiPalavraView(View):
+    def get(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        palavra = get_object_or_404(Palavra, pk=pk)
+        return JsonResponse({'palavra': palavra.texto})
 
-@csrf_exempt
-def api_palavra(request, pk):
-    palavra = get_object_or_404(Palavra, pk=pk)
-    return JsonResponse({'palavra': palavra.texto})
+class SalvarJogadaView(View):
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            palavra_id = data.get('palavra_id')
+            acertou = data.get('acertou')
+            erros = data.get('erros')
 
+            palavra = get_object_or_404(Palavra, pk=palavra_id)
 
-@require_POST
-def salvar_jogada(request):
-    data = json.loads(request.body)
-    palavra_id = data.get('palavra_id')
-    acertou = data.get('acertou')
-    erros = data.get('erros')
+            aluno = request.user if request.user.is_authenticated else None
 
-    palavra = get_object_or_404(Palavra, pk=palavra_id)
-
-    aluno = None
-    if request.user.is_authenticated:
-        aluno = request.user
-
-    jogada = Jogada.objects.create(
-        aluno=aluno,
-        palavra=palavra,
-        acertou=acertou,
-        erros=erros
-    )
-    return JsonResponse({'status': 'ok'})
+            Jogada.objects.create(
+                aluno=aluno,
+                palavra=palavra,
+                acertou=acertou,
+                erros=erros
+            )
+            return JsonResponse({'status': 'ok'}, status=201)
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
 class ProfessorDashboardView(LoginRequiredMixin, TemplateView):
