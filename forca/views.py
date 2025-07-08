@@ -15,14 +15,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Q
 from django.urls import reverse_lazy, reverse
 from .models import Tema, Palavra, Jogada, Professor
-from .forms import UserRegisterForm, TemaForm, PalavraForm
+from .forms import UserRegisterForm, TemaForm, PalavraForm, PalavraFormSet
 
-PalavraFormSet = inlineformset_factory(
-    Tema, Palavra,
-    fields=['texto', 'dica'],
-    extra=0,  # zero linhas extras
-    can_delete=True
-)
 
 class HomeView(TemplateView):
     template_name = 'forca/home.html'
@@ -42,6 +36,7 @@ class HomeView(TemplateView):
         context['q'] = query or ''
         return context
 
+
 class TemaListView(ListView):
     model = Tema
     paginate_by = 10
@@ -56,9 +51,11 @@ class TemaListView(ListView):
             )
         return queryset.order_by('nome')
 
+
 class ProfessorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_staff  # professores são staff
+
 
 class TemaCreateView(LoginRequiredMixin, CreateView):
     model = Tema
@@ -71,6 +68,7 @@ class TemaCreateView(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse('tema-gerenciar')
+
 
 class PalavraCreateView(LoginRequiredMixin, CreateView):
     model = Palavra
@@ -96,6 +94,7 @@ class PalavraCreateView(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('palavra-list', args=[self.tema.pk])
 
+
 class AlunoRegisterView(FormView):
     template_name = 'forca/register.html'
     form_class = UserRegisterForm
@@ -105,12 +104,12 @@ class AlunoRegisterView(FormView):
         form.save()
         return super().form_valid(form)
 
+
 def jogar_por_tema(request, pk):
     tema = get_object_or_404(Tema, pk=pk)
 
-    # VERIFICAÇÃO IMPORTANTE
     if tema.login_obrigatorio and not request.user.is_authenticated:
-        return redirect('login')  # ou exibir mensagem personalizada
+        return redirect('login')
 
     palavras = Palavra.objects.filter(tema=tema)
     if palavras.exists():
@@ -121,6 +120,7 @@ def jogar_por_tema(request, pk):
             'mensagem': 'Nenhuma palavra disponível para este tema.'
         })
 
+
 class JogarPalavraView(View):
     def get(self, request, pk):
         palavra = get_object_or_404(Palavra, pk=pk)
@@ -130,10 +130,12 @@ class JogarPalavraView(View):
             'dica': palavra.dica,
         })
 
+
 @csrf_exempt
 def api_palavra(request, pk):
     palavra = get_object_or_404(Palavra, pk=pk)
     return JsonResponse({'palavra': palavra.texto})
+
 
 @require_POST
 def salvar_jogada(request):
@@ -156,14 +158,15 @@ def salvar_jogada(request):
     )
     return JsonResponse({'status': 'ok'})
 
+
 class ProfessorDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'professor/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Busca todos os temas criados pelo professor logado
         context['temas'] = self.request.user.temas.all()
         return context
+
 
 class TemaUpdateView(LoginRequiredMixin, UpdateView):
     model = Tema
@@ -174,9 +177,9 @@ class TemaUpdateView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         if self.request.method == 'POST':
-            data['formset_palavras'] = PalavraFormSet(self.request.POST, instance=self.object)
+            data['formset_palavras'] = PalavraFormSet(self.request.POST, instance=self.object, prefix='palavras')
         else:
-            data['formset_palavras'] = PalavraFormSet(instance=self.object)
+            data['formset_palavras'] = PalavraFormSet(instance=self.object, prefix='palavras')
         return data
 
     def form_valid(self, form):
@@ -185,10 +188,15 @@ class TemaUpdateView(LoginRequiredMixin, UpdateView):
         if formset.is_valid():
             self.object = form.save()
             formset.instance = self.object
+            # Adicionar o 'criado_por' para novas palavras
+            for form_palavra in formset:
+                if form_palavra.instance.pk is None and form_palavra.cleaned_data:
+                    form_palavra.instance.criado_por = self.request.user
             formset.save()
             return redirect(self.get_success_url())
         else:
             return self.render_to_response(self.get_context_data(form=form))
+
 
 class TemaGerenciarView(LoginRequiredMixin, ListView):
     model = Tema
@@ -196,13 +204,8 @@ class TemaGerenciarView(LoginRequiredMixin, ListView):
     context_object_name = 'temas'
 
     def get_queryset(self):
-        # Apenas os temas criados pelo professor logado
         return Tema.objects.filter(criado_por=self.request.user)
-class TemaUpdateView(UpdateView):
-    model = Tema
-    form_class = TemaForm
-    template_name = 'forca/editar.html'  # <-- aqui você escolhe o template
-    success_url = reverse_lazy('tema-gerenciar')
+
 
 class TemaDeleteView(LoginRequiredMixin, DeleteView):
     model = Tema
@@ -216,6 +219,7 @@ class TemaDeleteView(LoginRequiredMixin, DeleteView):
         context['objeto_tipo'] = 'tema'
         return context
 
+
 class PalavraListView(LoginRequiredMixin, ListView):
     model = Palavra
     template_name = 'forca/palavra_list.html'
@@ -223,7 +227,6 @@ class PalavraListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         self.tema = get_object_or_404(Tema, pk=self.kwargs['tema_pk'])
-        # Se o tema exigir login, só mostra para usuários autenticados
         if self.tema.login_obrigatorio and not self.request.user.is_authenticated:
             return Palavra.objects.none()
         return Palavra.objects.filter(tema=self.tema)
@@ -233,6 +236,7 @@ class PalavraListView(LoginRequiredMixin, ListView):
         context['tema'] = self.tema
         return context
 
+
 class PalavraUpdateView(LoginRequiredMixin, UpdateView):
     model = Palavra
     form_class = PalavraForm
@@ -240,10 +244,11 @@ class PalavraUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_queryset(self):
         tema_pk = self.kwargs['tema_pk']
-        return Palavra.objects.filter(tema_id=tema_pk)
+        return Palavra.objects.filter(tema_id=tema_pk, criado_por=self.request.user)
 
     def get_success_url(self):
         return reverse('editar-tema', kwargs={'pk': self.kwargs['tema_pk']})
+
 
 class PalavraDeleteView(LoginRequiredMixin, DeleteView):
     model = Palavra
@@ -257,18 +262,32 @@ class PalavraDeleteView(LoginRequiredMixin, DeleteView):
         context['objeto_tipo'] = 'palavra'
         return context
 
+
 def editar(request, pk):
-    tema = get_object_or_404(Tema, pk=pk)
+    tema = get_object_or_404(Tema, pk=pk, criado_por=request.user)
     form_tema = TemaForm(request.POST or None, instance=tema)
-    formset_palavras = PalavraFormSet(request.POST or None, instance=tema)
+
+    # É crucial definir um prefixo para o formset para que o Django possa diferenciá-lo de outros forms.
+    # O prefixo 'palavras' é uma boa escolha.
+    formset_palavras = PalavraFormSet(request.POST or None, instance=tema, prefix='palavras')
 
     if request.method == 'POST':
         if form_tema.is_valid() and formset_palavras.is_valid():
             form_tema.save()
-            formset_palavras.save()
-            return redirect('tema-gerenciar')
 
-    print(form_tema)
+            # Precisamos salvar o criador de cada nova palavra
+            instances = formset_palavras.save(commit=False)
+            for instance in instances:
+                if instance.pk is None:  # Se é uma nova palavra
+                    instance.criado_por = request.user
+                instance.save()
+
+            # Salvar as relações many-to-many e deletar os objetos marcados
+            formset_palavras.save_m2m()
+            for form in formset_palavras.deleted_forms:
+                form.instance.delete()
+
+            return redirect('tema-gerenciar')
 
     return render(request, 'forca/editar.html', {
         'form_tema': form_tema,
@@ -278,14 +297,16 @@ def editar(request, pk):
 
 class ProfessorListView(ListView):
     model = Professor
-    template_name = 'forca/professor_list.html'  # crie esse template ou ajuste o nome
+    template_name = 'forca/professor_list.html'
     context_object_name = 'professores'
+
 
 class TemaPorProfessorListView(ListView):
     model = Tema
-    template_name = 'forca/tema_por_professor_list.html'  # ajuste conforme seu template
+    template_name = 'forca/tema_por_professor_list.html'
     context_object_name = 'temas'
 
     def get_queryset(self):
         professor_id = self.kwargs['professor_id']
-        return Tema.objects.filter(professor__id=professor_id)
+        # Assumindo que o modelo 'Tema' tem um campo 'criado_por' que é um ForeignKey para User (Professor)
+        return Tema.objects.filter(criado_por__id=professor_id)
